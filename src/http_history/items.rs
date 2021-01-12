@@ -81,10 +81,11 @@ where
 
                         let burp_version = attrs
                             .iter()
-                            .filter(|a| a.key == b"burpVersion")
-                            .next()
+                            .find(|a| a.key == b"burpVersion")
                             .map(|x| x.value.to_owned())
-                            .ok_or(ItemsParseError::AttrMissing("burpVersion".to_owned()))?;
+                            .ok_or_else(|| {
+                                ItemsParseError::AttrMissing("burpVersion".to_owned())
+                            })?;
 
                         let burp_version = str::from_utf8(burp_version.as_ref())
                             .map(|x| x.to_owned())
@@ -97,10 +98,9 @@ where
 
                         let export_time = attrs
                             .iter()
-                            .filter(|a| a.key == b"exportTime")
-                            .next()
+                            .find(|a| a.key == b"exportTime")
                             .map(|x| x.value.to_owned())
-                            .ok_or(ItemsParseError::AttrMissing("exportTime".to_owned()))?;
+                            .ok_or_else(|| ItemsParseError::AttrMissing("exportTime".to_owned()))?;
 
                         let export_time = NaiveDateTime::parse_from_str(
                             str::from_utf8(export_time.as_ref()).map_err(|err| {
@@ -216,13 +216,14 @@ where
 
                                             let ip = attrs
                                                 .iter()
-                                                .filter(|a| a.key == b"ip")
-                                                .next()
+                                                .find(|a| a.key == b"ip")
                                                 .map(|x| x.value.to_owned())
-                                                .ok_or(ItemParseError::TagAttrMissing(
-                                                    tag.to_owned(),
-                                                    "ip".to_owned(),
-                                                ))?;
+                                                .ok_or_else(|| {
+                                                    ItemParseError::TagAttrMissing(
+                                                        tag.to_owned(),
+                                                        "ip".to_owned(),
+                                                    )
+                                                })?;
 
                                             self.item.host.0.ip = ip.into_owned();
                                         }
@@ -235,13 +236,14 @@ where
 
                                             let base64 = attrs
                                                 .iter()
-                                                .filter(|a| a.key == b"base64")
-                                                .next()
+                                                .find(|a| a.key == b"base64")
                                                 .map(|x| x.value.to_owned())
-                                                .ok_or(ItemParseError::TagAttrMissing(
-                                                    tag.to_owned(),
-                                                    "base64".to_owned(),
-                                                ))?;
+                                                .ok_or_else(|| {
+                                                    ItemParseError::TagAttrMissing(
+                                                        tag.to_owned(),
+                                                        "base64".to_owned(),
+                                                    )
+                                                })?;
 
                                             let base64 =
                                                 str::from_utf8(base64.as_ref()).map_err(|err| {
@@ -272,13 +274,14 @@ where
 
                                             let base64 = attrs
                                                 .iter()
-                                                .filter(|a| a.key == b"base64")
-                                                .next()
+                                                .find(|a| a.key == b"base64")
                                                 .map(|x| x.value.to_owned())
-                                                .ok_or(ItemParseError::TagAttrMissing(
-                                                    tag.to_owned(),
-                                                    "base64".to_owned(),
-                                                ))?;
+                                                .ok_or_else(|| {
+                                                    ItemParseError::TagAttrMissing(
+                                                        tag.to_owned(),
+                                                        "base64".to_owned(),
+                                                    )
+                                                })?;
 
                                             let base64 =
                                                 str::from_utf8(base64.as_ref()).map_err(|err| {
@@ -324,7 +327,7 @@ where
                             .difference(&self.processed_item_tags)
                             .collect::<HashSet<_>>();
 
-                        if unprocessed_item_tags.len() > 0 {
+                        if !unprocessed_item_tags.is_empty() {
                             return Err(ItemParseError::SomeTagsMissing(
                                 unprocessed_item_tags
                                     .into_iter()
@@ -367,107 +370,98 @@ where
                 Ok(Event::Text(e)) => match self.state {
                     State::Idle => {}
                     State::WaitTag => {}
-                    State::WaitTagValue(ref tag) => match tag {
-                        _ => match e.unescape_and_decode(&self.reader) {
-                            Ok(text) => match tag {
-                                ItemTag::Time => {
-                                    let time = NaiveDateTime::parse_from_str(
-                                        str::from_utf8(text.as_ref()).map_err(|err| {
-                                            ItemParseError::TagValueInvalid(
-                                                tag.to_owned(),
-                                                err.to_string(),
-                                            )
-                                        })?,
-                                        "%a %b %d %T %Z %Y",
-                                    )
-                                    .map_err(|err| {
+                    State::WaitTagValue(ref tag) => match e.unescape_and_decode(&self.reader) {
+                        Ok(text) => match tag {
+                            ItemTag::Time => {
+                                let time = NaiveDateTime::parse_from_str(
+                                    str::from_utf8(text.as_ref()).map_err(|err| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?,
+                                    "%a %b %d %T %Z %Y",
+                                )
+                                .map_err(|err| {
+                                    ItemParseError::TagValueInvalid(tag.to_owned(), err.to_string())
+                                })?;
+
+                                self.item.time = time;
+
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Host => {
+                                self.item.host.1 = text;
+
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Port => {
+                                let port: u16 = text.parse().map_err(|err: ParseIntError| {
+                                    ItemParseError::TagValueInvalid(tag.to_owned(), err.to_string())
+                                })?;
+
+                                self.item.port = port;
+
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Protocol => {
+                                let protocol: Scheme =
+                                    text.parse().map_err(|err: InvalidUri| {
                                         ItemParseError::TagValueInvalid(
                                             tag.to_owned(),
                                             err.to_string(),
                                         )
                                     })?;
 
-                                    self.item.time = time;
+                                self.item.protocol = protocol;
 
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Host => {
-                                    self.item.host.1 = text;
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Extension => {
+                                self.item.extension =
+                                    if text == "null" { None } else { Some(text) };
 
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Port => {
-                                    let port: u16 =
-                                        text.parse().map_err(|err: ParseIntError| {
-                                            ItemParseError::TagValueInvalid(
-                                                tag.to_owned(),
-                                                err.to_string(),
-                                            )
-                                        })?;
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Status => {
+                                let status =
+                                    StatusCode::from_bytes(text.as_bytes()).map_err(|err| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?;
 
-                                    self.item.port = port;
+                                self.item.status = status;
 
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Protocol => {
-                                    let protocol: Scheme =
-                                        text.parse().map_err(|err: InvalidUri| {
-                                            ItemParseError::TagValueInvalid(
-                                                tag.to_owned(),
-                                                err.to_string(),
-                                            )
-                                        })?;
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::ResponseLength => {
+                                let response_length: u32 =
+                                    text.parse().map_err(|err: ParseIntError| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?;
 
-                                    self.item.protocol = protocol;
+                                self.item.response_length = response_length;
 
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Extension => {
-                                    self.item.extension =
-                                        if text == "null" { None } else { Some(text) };
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Mimetype => {
+                                self.item.mimetype = text;
 
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Status => {
-                                    let status =
-                                        StatusCode::from_bytes(text.as_bytes()).map_err(|err| {
-                                            ItemParseError::TagValueInvalid(
-                                                tag.to_owned(),
-                                                err.to_string(),
-                                            )
-                                        })?;
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Comment => {
+                                self.item.comment = if text.is_empty() { None } else { Some(text) };
 
-                                    self.item.status = status;
-
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::ResponseLength => {
-                                    let response_length: u32 =
-                                        text.parse().map_err(|err: ParseIntError| {
-                                            ItemParseError::TagValueInvalid(
-                                                tag.to_owned(),
-                                                err.to_string(),
-                                            )
-                                        })?;
-
-                                    self.item.response_length = response_length;
-
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Mimetype => {
-                                    self.item.mimetype = text;
-
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Comment => {
-                                    self.item.comment = if text == "" { None } else { Some(text) };
-
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                _ => {}
-                            },
-                            Err(err) => return Err(ItemParseError::XmlError(err)),
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            _ => {}
                         },
+                        Err(err) => return Err(ItemParseError::XmlError(err)),
                     },
                 },
                 Ok(Event::CData(e)) => match self.state {
