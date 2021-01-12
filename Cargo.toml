@@ -18,3 +18,8 @@ http = { version = "0.2", default-features = false, features = [] }
 chrono = { version = "0.4", default-features = false, features = [] }
 once_cell = { version = "1.5", default-features = false, features = ["std"] }
 strum = { version = "0.20", default-features = false, features = ["derive"] }
+
+[workspace]
+members = [
+    "demos/http_history",
+]
