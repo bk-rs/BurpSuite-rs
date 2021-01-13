@@ -30,6 +30,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     let items: Vec<_> = items
         .filter_map(|item| {
+            if item.is_err() {
+                error!("{:?}", item)
+            }
+
             item.and_then(|item| {
                 if item.status.is_success() {
                     Ok(item)

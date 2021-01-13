@@ -194,6 +194,7 @@ where
                             )));
                         }
 
+                        self.item = Default::default();
                         self.state = State::WaitTag;
                     }
                     _ => {
@@ -360,11 +361,21 @@ where
                                         self.state
                                     )));
                                 }
-                                State::WaitTagValue(_) => {
-                                    if self.processed_item_tags.contains(&tag) {
-                                        self.state = State::WaitTag;
+                                State::WaitTagValue(ref wait_tag) => {
+                                    if wait_tag == &tag {
+                                        if self.processed_item_tags.contains(&tag) {
+                                            self.state = State::WaitTag;
+                                        } else {
+                                            return Err(ItemParseError::TagValueMissing(
+                                                wait_tag.to_owned(),
+                                            ));
+                                        }
                                     } else {
-                                        return Err(ItemParseError::TagValueMissing(tag));
+                                        return Err(ItemParseError::StateMismatch(format!(
+                                            "expect {:?} but current {:?}",
+                                            State::WaitTagValue(tag),
+                                            self.state
+                                        )));
                                     }
                                 }
                             }
@@ -473,52 +484,48 @@ where
                 Ok(Event::CData(e)) => match self.state {
                     State::Idle => {}
                     State::WaitTag => {}
-                    State::WaitTagValue(ref tag) => match tag {
-                        ItemTag::Request | ItemTag::Response => match e.unescaped() {
-                            Ok(bytes) => match tag {
-                                ItemTag::Request => {
-                                    self.item.request.1 = bytes.into_owned();
+                    State::WaitTagValue(ref tag) => {
+                        let bytes = e.escaped();
+                        match tag {
+                            ItemTag::Request => {
+                                self.item.request.1 = bytes.to_vec();
 
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Response => {
-                                    self.item.response.1 = bytes.into_owned();
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Response => {
+                                self.item.response.1 = bytes.to_vec();
 
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                _ => {}
-                            },
-                            Err(err) => return Err(ItemParseError::XmlError(err)),
-                        },
-                        _ => match e.unescape_and_decode(&self.reader) {
-                            Ok(text) => match tag {
-                                ItemTag::Url => {
-                                    self.item.url = text;
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Url => {
+                                let url = String::from_utf8(bytes.to_vec()).map_err(|err| {
+                                    ItemParseError::TagValueInvalid(tag.to_owned(), err.to_string())
+                                })?;
 
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Method => {
-                                    let method =
-                                        Method::from_bytes(text.as_bytes()).map_err(|err| {
-                                            ItemParseError::TagValueInvalid(
-                                                tag.to_owned(),
-                                                err.to_string(),
-                                            )
-                                        })?;
+                                self.item.url = url;
 
-                                    self.item.method = method;
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Method => {
+                                let method = Method::from_bytes(bytes).map_err(|err| {
+                                    ItemParseError::TagValueInvalid(tag.to_owned(), err.to_string())
+                                })?;
 
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                ItemTag::Path => {
-                                    self.item.path = text;
-                                    self.processed_item_tags.insert(tag.to_owned());
-                                }
-                                _ => {}
-                            },
-                            Err(err) => return Err(ItemParseError::XmlError(err)),
-                        },
-                    },
+                                self.item.method = method;
+
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Path => {
+                                let path = String::from_utf8(bytes.to_vec()).map_err(|err| {
+                                    ItemParseError::TagValueInvalid(tag.to_owned(), err.to_string())
+                                })?;
+
+                                self.item.path = path;
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            _ => {}
+                        }
+                    }
                 },
                 Err(err) => return Err(ItemParseError::XmlError(err)),
                 Ok(Event::Eof) => return Err(ItemParseError::UnexpectedEof),
