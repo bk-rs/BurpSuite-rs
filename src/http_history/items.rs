@@ -29,6 +29,7 @@ where
     state: State,
     item: Item,
     processed_item_tags: HashSet<ItemTag>,
+    is_eof: bool,
 }
 
 pub struct ItemsAttr {
@@ -138,6 +139,7 @@ where
             state: State::Idle,
             item: Default::default(),
             processed_item_tags: HashSet::new(),
+            is_eof: false,
         })
     }
 }
@@ -152,6 +154,7 @@ pub enum ItemParseError {
     DuplicateTag(ItemTag),
     TagAttrMissing(ItemTag, String),
     TagAttrInvalid(ItemTag, String, String),
+    TagValueMissing(ItemTag),
     TagValueInvalid(ItemTag, String),
 }
 
@@ -168,6 +171,7 @@ impl fmt::Display for ItemParseError {
             Self::TagAttrInvalid(tag, attr, msg) => {
                 write!(f, "TagAttrInvalid {:?} {} {}", tag, attr, msg)
             }
+            Self::TagValueMissing(tag) => write!(f, "TagValueMissing {:?}", tag),
             Self::TagValueInvalid(tag, msg) => write!(f, "TagValueInvalid {:?} {}", tag, msg),
         }
     }
@@ -359,6 +363,8 @@ where
                                 State::WaitTagValue(_) => {
                                     if self.processed_item_tags.contains(&tag) {
                                         self.state = State::WaitTag;
+                                    } else {
+                                        return Err(ItemParseError::TagValueMissing(tag));
                                     }
                                 }
                             }
@@ -538,6 +544,10 @@ where
                     if self.state == State::Idle {
                         None
                     } else {
+                        if self.is_eof {
+                            return None;
+                        }
+                        self.is_eof = true;
                         Some(Err(err))
                     }
                 }

@@ -43,7 +43,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     for item in items.iter() {
         let req_bytes = base64_decode(&item.request.1)?;
         let mut req_buf_reader = BufReader::new(Cursor::new(req_bytes));
-        let mut req_head_parser = RequestHeadParser::with_config(Default::default());
+        let mut req_head_parse_config = HeadParseConfig::default();
+        req_head_parse_config
+            .set_uri_max_len(1024)
+            .set_header_max_len(2048);
+        let mut req_head_parser = RequestHeadParser::with_config(req_head_parse_config);
         let req_head_parser_output = req_head_parser
             .parse(&mut req_buf_reader)
             .map_err(|err| err.to_string())?;
@@ -71,10 +75,10 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             HeadParseOutput::Partial(_) => return Err("req partial".to_owned().into()),
         };
         let res_body_slice = &res_buf_reader.into_inner().into_inner()[n..];
-        let res_body: Value = serde_json::from_slice(res_body_slice)?;
-
-        println!("res_headers {:?}", res_head_parser.get_headers());
-        println!("res_body {}", res_body);
+        if let Ok(res_body) = serde_json::from_slice::<Value>(res_body_slice) {
+            println!("res_headers {:?}", res_head_parser.get_headers());
+            println!("res_body {}", res_body);
+        }
     }
 
     Ok(())
