@@ -1,5 +1,5 @@
 /*
-cargo run -p burpsuite_kit_http_history
+RUST_LOG=debug cargo run -p burpsuite_kit_http_history
 */
 
 use std::env;
@@ -15,9 +15,12 @@ use http1_spec::{
     request_head_parser::RequestHeadParser,
     response_head_parser::ResponseHeadParser,
 };
+use log::{debug, error};
 use serde_json::Value;
 
 fn main() -> Result<(), Box<dyn error::Error>> {
+    pretty_env_logger::init();
+
     let path = env::args().nth(1).unwrap_or_else(|| {
         "tests/http_history_files/burpsuite_community_v2020.12.1.xml".to_owned()
     });
@@ -53,13 +56,16 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             .map_err(|err| err.to_string())?;
         let n = match req_head_parser_output {
             HeadParseOutput::Completed(n) => n,
-            HeadParseOutput::Partial(_) => return Err("req partial".to_owned().into()),
+            HeadParseOutput::Partial(_) => {
+                error!("req partial, item {:?}", item);
+                return Err("req partial".to_owned().into());
+            }
         };
         let req_body_slice = &req_buf_reader.into_inner().into_inner()[n..];
         let req_body_str = str::from_utf8(req_body_slice)?;
 
-        println!("req_headers {:?}", req_head_parser.get_headers());
-        println!("req_body_str {}", req_body_str);
+        debug!("req_headers {:?}", req_head_parser.get_headers());
+        debug!("req_body_str {}", req_body_str);
 
         //
         let res_bytes = base64_decode(&item.response.1)?;
@@ -75,15 +81,15 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             HeadParseOutput::Partial(_) => return Err("req partial".to_owned().into()),
         };
         let res_headers = res_head_parser.get_headers();
-        println!("res_headers {:?}", res_headers);
+        debug!("res_headers {:?}", res_headers);
 
         let res_body_slice = &res_buf_reader.into_inner().into_inner()[n..];
         match serde_json::from_slice::<Value>(res_body_slice) {
             Ok(res_body) => {
-                println!("res_body {}", res_body);
+                debug!("res_body {}", res_body);
             }
             Err(err) => {
-                eprintln!("res_body parse err {:?}", err);
+                error!("res_body parse err {:?} item {:?}", err, item);
             }
         }
     }
