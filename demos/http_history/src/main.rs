@@ -74,10 +74,17 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             HeadParseOutput::Completed(n) => n,
             HeadParseOutput::Partial(_) => return Err("req partial".to_owned().into()),
         };
+        let res_headers = res_head_parser.get_headers();
+        println!("res_headers {:?}", res_headers);
+
         let res_body_slice = &res_buf_reader.into_inner().into_inner()[n..];
-        if let Ok(res_body) = serde_json::from_slice::<Value>(res_body_slice) {
-            println!("res_headers {:?}", res_head_parser.get_headers());
-            println!("res_body {}", res_body);
+        match serde_json::from_slice::<Value>(res_body_slice) {
+            Ok(res_body) => {
+                println!("res_body {}", res_body);
+            }
+            Err(err) => {
+                eprintln!("res_body parse err {:?}", err);
+            }
         }
     }
 
