@@ -88,12 +88,12 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         debug!("res_headers {:?}", res_headers);
 
         let res_body_slice = &res_buf_reader.into_inner().into_inner()[n..];
-        match serde_json::from_slice::<Value>(res_body_slice) {
-            Ok(res_body) => {
+        if let Some(res_content_type) = res_headers.get("content-type") {
+            if res_content_type == "application/json"
+                || res_content_type == "application/json; charset=utf-8"
+            {
+                let res_body = serde_json::from_slice::<Value>(res_body_slice)?;
                 debug!("res_body {}", res_body);
-            }
-            Err(err) => {
-                error!("res_body parse err {:?} item {:?}", err, item);
             }
         }
     }
