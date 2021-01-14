@@ -123,7 +123,6 @@ where
                     }
                     _ => return Err(ItemsParseError::UnknownTag(e.name().to_owned())),
                 },
-                Ok(Event::Text(_)) => {}
                 Err(err) => return Err(ItemsParseError::XmlError(err)),
                 Ok(Event::Eof) => return Err(ItemsParseError::UnexpectedEof),
                 _ => {}
@@ -387,11 +386,12 @@ where
                 Ok(Event::Text(e)) => match self.state {
                     State::Idle => {}
                     State::WaitTag => {}
-                    State::WaitTagValue(ref tag) => match e.unescape_and_decode(&self.reader) {
-                        Ok(text) => match tag {
+                    State::WaitTagValue(ref tag) => {
+                        let bytes = e.escaped();
+                        match tag {
                             ItemTag::Time => {
                                 let time = NaiveDateTime::parse_from_str(
-                                    str::from_utf8(text.as_ref()).map_err(|err| {
+                                    str::from_utf8(bytes).map_err(|err| {
                                         ItemParseError::TagValueInvalid(
                                             tag.to_owned(),
                                             err.to_string(),
@@ -408,22 +408,46 @@ where
                                 self.processed_item_tags.insert(tag.to_owned());
                             }
                             ItemTag::Host => {
-                                self.item.host.1 = text;
+                                self.item.host.1 =
+                                    String::from_utf8(bytes.to_vec()).map_err(|err| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?;
 
                                 self.processed_item_tags.insert(tag.to_owned());
                             }
                             ItemTag::Port => {
-                                let port: u16 = text.parse().map_err(|err: ParseIntError| {
-                                    ItemParseError::TagValueInvalid(tag.to_owned(), err.to_string())
-                                })?;
+                                let port: u16 = str::from_utf8(bytes)
+                                    .map_err(|err| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?
+                                    .parse()
+                                    .map_err(|err: ParseIntError| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?;
 
                                 self.item.port = port;
 
                                 self.processed_item_tags.insert(tag.to_owned());
                             }
                             ItemTag::Protocol => {
-                                let protocol: Scheme =
-                                    text.parse().map_err(|err: InvalidUri| {
+                                let protocol: Scheme = str::from_utf8(bytes)
+                                    .map_err(|err| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?
+                                    .parse()
+                                    .map_err(|err: InvalidUri| {
                                         ItemParseError::TagValueInvalid(
                                             tag.to_owned(),
                                             err.to_string(),
@@ -435,27 +459,38 @@ where
                                 self.processed_item_tags.insert(tag.to_owned());
                             }
                             ItemTag::Extension => {
-                                self.item.extension =
-                                    if text == "null" { None } else { Some(text) };
-
-                                self.processed_item_tags.insert(tag.to_owned());
-                            }
-                            ItemTag::Status => {
-                                let status =
-                                    StatusCode::from_bytes(text.as_bytes()).map_err(|err| {
+                                self.item.extension = if bytes == b"null" {
+                                    None
+                                } else {
+                                    Some(String::from_utf8(bytes.to_vec()).map_err(|err| {
                                         ItemParseError::TagValueInvalid(
                                             tag.to_owned(),
                                             err.to_string(),
                                         )
-                                    })?;
+                                    })?)
+                                };
+
+                                self.processed_item_tags.insert(tag.to_owned());
+                            }
+                            ItemTag::Status => {
+                                let status = StatusCode::from_bytes(bytes).map_err(|err| {
+                                    ItemParseError::TagValueInvalid(tag.to_owned(), err.to_string())
+                                })?;
 
                                 self.item.status = status;
 
                                 self.processed_item_tags.insert(tag.to_owned());
                             }
                             ItemTag::ResponseLength => {
-                                let response_length: u32 =
-                                    text.parse().map_err(|err: ParseIntError| {
+                                let response_length: u32 = str::from_utf8(bytes)
+                                    .map_err(|err| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?
+                                    .parse()
+                                    .map_err(|err: ParseIntError| {
                                         ItemParseError::TagValueInvalid(
                                             tag.to_owned(),
                                             err.to_string(),
@@ -467,19 +502,33 @@ where
                                 self.processed_item_tags.insert(tag.to_owned());
                             }
                             ItemTag::Mimetype => {
-                                self.item.mimetype = text;
+                                self.item.mimetype =
+                                    String::from_utf8(bytes.to_vec()).map_err(|err| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?;
 
                                 self.processed_item_tags.insert(tag.to_owned());
                             }
                             ItemTag::Comment => {
-                                self.item.comment = if text.is_empty() { None } else { Some(text) };
+                                self.item.comment = if bytes.is_empty() {
+                                    None
+                                } else {
+                                    Some(String::from_utf8(bytes.to_vec()).map_err(|err| {
+                                        ItemParseError::TagValueInvalid(
+                                            tag.to_owned(),
+                                            err.to_string(),
+                                        )
+                                    })?)
+                                };
 
                                 self.processed_item_tags.insert(tag.to_owned());
                             }
                             _ => {}
-                        },
-                        Err(err) => return Err(ItemParseError::XmlError(err)),
-                    },
+                        }
+                    }
                 },
                 Ok(Event::CData(e)) => match self.state {
                     State::Idle => {}
