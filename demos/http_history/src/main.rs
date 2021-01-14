@@ -48,7 +48,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         .collect();
 
     for item in items.iter() {
-        let req_bytes = base64_decode(&item.request.1)?;
+        let req_bytes = if item.request.0.base64 {
+            base64_decode(&item.request.1)?
+        } else {
+            item.request.1.to_owned()
+        };
         let mut req_buf_reader = BufReader::new(Cursor::new(req_bytes));
         let mut req_head_parse_config = HeadParseConfig::default();
         req_head_parse_config
@@ -72,7 +76,11 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         debug!("req_body_str {}", req_body_str);
 
         //
-        let res_bytes = base64_decode(&item.response.1)?;
+        let res_bytes = if item.response.0.base64 {
+            base64_decode(&item.response.1)?
+        } else {
+            item.response.1.to_owned()
+        };
         let mut res_buf_reader = BufReader::new(Cursor::new(res_bytes));
         let mut res_head_parse_config = HeadParseConfig::default();
         res_head_parse_config.set_header_max_len(2048);
