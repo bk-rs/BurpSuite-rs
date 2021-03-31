@@ -13,11 +13,12 @@ categories = []
 readme = "README.md"
 
 [dependencies]
-quick-xml = { version = "0.20", default-features = false, features = [] }
-http = { version = "0.2", default-features = false, features = [] }
-chrono = { version = "0.4", default-features = false, features = [] }
-once_cell = { version = "1.5", default-features = false, features = ["std"] }
+quick-xml = { version = "0.22", default-features = false }
+http = { version = "0.2", default-features = false }
+chrono = { version = "0.4", default-features = false }
+once_cell = { version = "1.7", default-features = false, features = ["std"] }
 strum = { version = "0.20", default-features = false, features = ["derive"] }
+thiserror = { version = "1.0", default-features = false }
 
 [workspace]
 members = [

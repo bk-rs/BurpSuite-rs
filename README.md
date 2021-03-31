@@ -16,3 +16,9 @@ cargo test --all --all-features -- --nocapture
 ```
 RUST_LOG=debug cargo run -p burpsuite_kit_http_history
 ```
+
+```
+cargo build-all-features
+
+cargo test-all-features -- --nocapture
+```

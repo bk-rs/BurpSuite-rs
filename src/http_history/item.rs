@@ -1,7 +1,9 @@
-use std::collections::HashSet;
-use std::convert::TryFrom;
-use std::iter::Iterator;
-use std::str::{self, FromStr as _};
+use std::{
+    collections::HashSet,
+    convert::TryFrom,
+    iter::Iterator,
+    str::{self, FromStr as _},
+};
 
 use chrono::NaiveDateTime;
 use http::{uri::Scheme, Method, StatusCode};

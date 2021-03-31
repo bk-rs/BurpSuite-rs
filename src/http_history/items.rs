@@ -1,10 +1,11 @@
-use std::collections::HashSet;
-use std::convert::TryFrom;
-use std::fmt;
-use std::io::BufRead;
-use std::iter::Iterator;
-use std::num::ParseIntError;
-use std::str::{self, ParseBoolError};
+use std::{
+    collections::HashSet,
+    convert::TryFrom,
+    io::BufRead,
+    iter::Iterator,
+    num::ParseIntError,
+    str::{self, ParseBoolError},
+};
 
 use chrono::NaiveDateTime;
 use http::{
@@ -44,25 +45,18 @@ enum State {
     WaitTagValue(ItemTag),
 }
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum ItemsParseError {
+    #[error("XmlError {0:?}")]
     XmlError(Error),
+    #[error("UnknownTag {0:?}")]
     UnknownTag(Vec<u8>),
+    #[error("UnexpectedEof")]
     UnexpectedEof,
+    #[error("AttrMissing {0}")]
     AttrMissing(String),
+    #[error("AttrInvalid {0} {1}")]
     AttrInvalid(String, String),
-}
-
-impl fmt::Display for ItemsParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::XmlError(err) => write!(f, "XmlError {:?}", err),
-            Self::UnknownTag(name) => write!(f, "UnknownTag {:?}", name),
-            Self::UnexpectedEof => write!(f, "Unexpected"),
-            Self::AttrMissing(attr) => write!(f, "AttrMissing {}", attr),
-            Self::AttrInvalid(attr, msg) => write!(f, "AttrInvalid {} {}", attr, msg),
-        }
-    }
 }
 
 impl<R> Items<R>
@@ -143,37 +137,28 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum ItemParseError {
+    #[error("XmlError {0:?}")]
     XmlError(Error),
+    #[error("UnknownTag {0:?}")]
     UnknownTag(Vec<u8>),
+    #[error("Unexpected")]
     UnexpectedEof,
+    #[error("StateMismatch {0}")]
     StateMismatch(String),
+    #[error("SomeTagsMissing {0:?}")]
     SomeTagsMissing(HashSet<ItemTag>),
+    #[error("DuplicateTag {0:?}")]
     DuplicateTag(ItemTag),
+    #[error("TagAttrMissing {0:?} {1}")]
     TagAttrMissing(ItemTag, String),
+    #[error("TagAttrInvalid {0:?} {1} {2}")]
     TagAttrInvalid(ItemTag, String, String),
+    #[error("TagValueMissing {0:?}")]
     TagValueMissing(ItemTag),
+    #[error("TagValueInvalid {0:?} {1}")]
     TagValueInvalid(ItemTag, String),
-}
-
-impl fmt::Display for ItemParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::XmlError(err) => write!(f, "XmlError {:?}", err),
-            Self::UnknownTag(name) => write!(f, "UnknownTag {:?}", name),
-            Self::UnexpectedEof => write!(f, "Unexpected"),
-            Self::StateMismatch(msg) => write!(f, "StateMismatch {}", msg),
-            Self::SomeTagsMissing(tags) => write!(f, "SomeTagsMissing {:?}", tags),
-            Self::DuplicateTag(tag) => write!(f, "DuplicateTag {:?}", tag),
-            Self::TagAttrMissing(tag, attr) => write!(f, "TagAttrMissing {:?} {}", tag, attr),
-            Self::TagAttrInvalid(tag, attr, msg) => {
-                write!(f, "TagAttrInvalid {:?} {} {}", tag, attr, msg)
-            }
-            Self::TagValueMissing(tag) => write!(f, "TagValueMissing {:?}", tag),
-            Self::TagValueInvalid(tag, msg) => write!(f, "TagValueInvalid {:?} {}", tag, msg),
-        }
-    }
 }
 
 impl<R> Items<R>
@@ -617,16 +602,15 @@ where
 mod tests {
     use super::*;
 
-    use std::fs::File;
-    use std::io::BufReader;
+    use std::{error, fs::File, io::BufReader};
 
     use chrono::NaiveDate;
 
     #[test]
-    fn test_v_1_7_36() -> Result<(), String> {
+    fn test_v_1_7_36() -> Result<(), Box<dyn error::Error>> {
         let file = File::open("tests/http_history_files/burpsuite_community_v1.7.36.xml").unwrap();
         let buf_reader = BufReader::new(file);
-        let mut items = Items::from_reader(buf_reader).map_err(|err| err.to_string())?;
+        let mut items = Items::from_reader(buf_reader)?;
 
         assert_eq!(items.attr.burp_version, "1.7.36");
         assert_eq!(
@@ -661,7 +645,7 @@ mod tests {
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
-                assert!(false, err);
+                assert!(false, "{}", err);
             }
             None => assert!(false),
         }
@@ -693,7 +677,7 @@ mod tests {
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
-                assert!(false, err);
+                assert!(false, "{}", err);
             }
             None => assert!(false),
         }
@@ -704,11 +688,11 @@ mod tests {
     }
 
     #[test]
-    fn test_v_2020_12_1() -> Result<(), String> {
+    fn test_v_2020_12_1() -> Result<(), Box<dyn error::Error>> {
         let file =
             File::open("tests/http_history_files/burpsuite_community_v2020.12.1.xml").unwrap();
         let buf_reader = BufReader::new(file);
-        let mut items = Items::from_reader(buf_reader).map_err(|err| err.to_string())?;
+        let mut items = Items::from_reader(buf_reader)?;
 
         assert_eq!(items.attr.burp_version, "2020.12.1");
         assert_eq!(
@@ -743,7 +727,7 @@ mod tests {
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
-                assert!(false, err);
+                assert!(false, "{}", err);
             }
             None => assert!(false),
         }
@@ -775,7 +759,7 @@ mod tests {
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
-                assert!(false, err);
+                assert!(false, "{}", err);
             }
             None => assert!(false),
         }

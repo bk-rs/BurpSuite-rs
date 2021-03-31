@@ -1,12 +1,13 @@
 /*
-RUST_LOG=debug cargo run -p burpsuite_kit_http_history
+RUST_LOG=debug cargo run -p burpsuite_kit_demo_http_history
 */
 
-use std::env;
-use std::error;
-use std::fs::File;
-use std::io::{self, BufReader, Cursor};
-use std::str;
+use std::{
+    env, error,
+    fs::File,
+    io::{self, BufReader, Cursor},
+    str,
+};
 
 use base64::decode as base64_decode;
 use burpsuite_kit::http_history::items::{ItemParseError, Items};
@@ -26,7 +27,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     });
     let file = File::open(path)?;
     let buf_reader = BufReader::new(file);
-    let items = Items::from_reader(buf_reader).map_err(|err| err.to_string())?;
+    let items = Items::from_reader(buf_reader)?;
 
     let items: Vec<_> = items
         .filter_map(|item| {
