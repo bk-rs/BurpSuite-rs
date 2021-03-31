@@ -768,4 +768,86 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_v_2021_3_2() -> Result<(), Box<dyn error::Error>> {
+        let file =
+            File::open("tests/http_history_files/burpsuite_community_v2021.3.2.xml").unwrap();
+        let buf_reader = BufReader::new(file);
+        let mut items = Items::from_reader(buf_reader)?;
+
+        assert_eq!(items.attr.burp_version, "2021.3.2");
+        assert_eq!(
+            items.attr.export_time,
+            NaiveDate::from_ymd(2021, 3, 31).and_hms(13, 07, 44)
+        );
+
+        match items.next() {
+            Some(Ok(item)) => {
+                assert_eq!(
+                    item.time,
+                    NaiveDate::from_ymd(2021, 3, 31).and_hms(13, 6, 6)
+                );
+                assert_eq!(item.url, "http://httpbin.org/get?foo=bar");
+                assert_eq!(item.host.0.ip, b"34.199.75.4");
+                assert_eq!(item.host.1, "httpbin.org");
+                assert_eq!(item.port, 80);
+                assert_eq!(item.protocol, Scheme::HTTP);
+                assert_eq!(item.method, Method::GET);
+                assert_eq!(item.path, "/get?foo=bar");
+                assert_eq!(item.extension, None);
+                assert_eq!(item.request.0.base64, true);
+                assert_eq!(item.request.1.starts_with(b"R0VUIC"), true);
+                assert_eq!(item.request.1.ends_with(b"UNCg0K"), true);
+                assert_eq!(item.status, 200);
+                assert_eq!(item.response_length, 508);
+                assert_eq!(item.mimetype, "JSON");
+                assert_eq!(item.response.0.base64, true);
+                assert_eq!(item.response.1.starts_with(b"SFRUUC"), true);
+                assert_eq!(item.response.1.ends_with(b"p9Cg=="), true);
+                assert_eq!(item.comment, None);
+            }
+            Some(Err(err)) => {
+                eprintln!("{}", err);
+                assert!(false, "{}", err);
+            }
+            None => assert!(false),
+        }
+
+        match items.next() {
+            Some(Ok(item)) => {
+                assert_eq!(
+                    item.time,
+                    NaiveDate::from_ymd(2021, 3, 31).and_hms(13, 6, 13)
+                );
+                assert_eq!(item.url, "https://httpbin.org/post");
+                assert_eq!(item.host.0.ip, b"34.199.75.4");
+                assert_eq!(item.host.1, "httpbin.org");
+                assert_eq!(item.port, 443);
+                assert_eq!(item.protocol, Scheme::HTTPS);
+                assert_eq!(item.method, Method::POST);
+                assert_eq!(item.path, "/post");
+                assert_eq!(item.extension, None);
+                assert_eq!(item.request.0.base64, true);
+                assert_eq!(item.request.1.starts_with(b"UE9TVC"), true);
+                assert_eq!(item.request.1.ends_with(b"oNCnt9"), true);
+                assert_eq!(item.status, 200);
+                assert_eq!(item.response_length, 593);
+                assert_eq!(item.mimetype, "JSON");
+                assert_eq!(item.response.0.base64, true);
+                assert_eq!(item.response.1.starts_with(b"SFRUUC"), true);
+                assert_eq!(item.response.1.ends_with(b"IKfQo="), true);
+                assert_eq!(item.comment, None);
+            }
+            Some(Err(err)) => {
+                eprintln!("{}", err);
+                assert!(false, "{}", err);
+            }
+            None => assert!(false),
+        }
+
+        assert!(items.next().is_none());
+
+        Ok(())
+    }
 }
