@@ -2,7 +2,7 @@
 name = "burpsuite-kit"
 version = "0.1.4"
 authors = ["vkill <vkill.net@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "Burp Suite kit"
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/bk-rs/burpsuite-kit"
