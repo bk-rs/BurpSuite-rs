@@ -1,6 +1,6 @@
 [package]
 name = "burpsuite-kit"
-version = "0.1.4"
+version = "0.2.0"
 authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2021"
 description = "Burp Suite kit"
