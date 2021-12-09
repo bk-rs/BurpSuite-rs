@@ -1,26 +1,5 @@
-[package]
-name = "burpsuite-kit"
-version = "0.1.4"
-authors = ["vkill <vkill.net@gmail.com>"]
-edition = "2018"
-description = "Burp Suite kit"
-license = "Apache-2.0 OR MIT"
-repository = "https://github.com/bk-rs/burpsuite-kit"
-homepage = "https://github.com/bk-rs/burpsuite-kit"
-documentation = "https://docs.rs/burpsuite-kit"
-keywords = []
-categories = []
-readme = "README.md"
-
-[dependencies]
-quick-xml = { version = "0.22", default-features = false }
-http = { version = "0.2", default-features = false }
-chrono = { version = "0.4", default-features = false }
-once_cell = { version = "1.7", default-features = false, features = ["std"] }
-strum = { version = "0.20", default-features = false, features = ["derive"] }
-thiserror = { version = "1.0", default-features = false }
-
 [workspace]
 members = [
-    "demos/http_history",
+    "burpsuite-kit",
+    "burpsuite-kit/demo",
 ]

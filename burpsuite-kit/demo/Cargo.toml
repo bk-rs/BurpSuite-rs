@@ -1,11 +1,15 @@
 [package]
-name = "burpsuite_kit_demo_http_history"
+name = "burpsuite-kit-demo"
 version = "0.1.0"
 authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2018"
 
+[[bin]]
+name = "burpsuite_kit_http_history"
+path = "src/http_history.rs"
+
 [dependencies]
-burpsuite-kit = { path = "../..", version = "=0.1.4" }
+burpsuite-kit = { path = "..", version = "^0.1" }
 base64 = "0.13"
 http1-spec = "0.2"
 serde_json = "1.0"

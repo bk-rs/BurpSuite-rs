@@ -1,11 +1,12 @@
 /*
-RUST_LOG=debug cargo run -p burpsuite_kit_demo_http_history
+RUST_LOG=debug cargo run -p burpsuite-kit-demo --bin burpsuite_kit_http_history
 */
 
 use std::{
     env, error,
     fs::File,
     io::{self, BufReader, Cursor},
+    path::PathBuf,
     str,
 };
 
@@ -23,7 +24,16 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     pretty_env_logger::init();
 
     let path = env::args().nth(1).unwrap_or_else(|| {
-        "tests/http_history_files/burpsuite_community_v2020.12.1.xml".to_owned()
+        let path = if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
+            PathBuf::from(&manifest_dir)
+        } else {
+            PathBuf::new()
+        };
+
+        path.join("../tests/http_history_files/burpsuite_community_v2020.12.1.xml")
+            .to_str()
+            .unwrap()
+            .to_owned()
     });
     let file = File::open(path)?;
     let buf_reader = BufReader::new(file);
