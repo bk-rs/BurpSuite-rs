@@ -632,22 +632,22 @@ mod tests {
                 assert_eq!(item.method, Method::GET);
                 assert_eq!(item.path, "/get?foo=bar");
                 assert_eq!(item.extension, None);
-                assert_eq!(item.request.0.base64, true);
-                assert_eq!(item.request.1.starts_with(b"R0VUIC"), true);
-                assert_eq!(item.request.1.ends_with(b"UNCg0K"), true);
+                assert!(item.request.0.base64);
+                assert!(item.request.1.starts_with(b"R0VUIC"));
+                assert!(item.request.1.ends_with(b"UNCg0K"));
                 assert_eq!(item.status, 200);
                 assert_eq!(item.response_length, 508);
                 assert_eq!(item.mimetype, "JSON");
-                assert_eq!(item.response.0.base64, true);
-                assert_eq!(item.response.1.starts_with(b"SFRUUC"), true);
-                assert_eq!(item.response.1.ends_with(b"p9Cg=="), true);
+                assert!(item.response.0.base64);
+                assert!(item.response.1.starts_with(b"SFRUUC"));
+                assert!(item.response.1.ends_with(b"p9Cg=="));
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
                 assert!(false, "{}", err);
             }
-            None => assert!(false),
+            None => panic!(),
         }
 
         match items.next() {
@@ -664,22 +664,22 @@ mod tests {
                 assert_eq!(item.method, Method::POST);
                 assert_eq!(item.path, "/post");
                 assert_eq!(item.extension, None);
-                assert_eq!(item.request.0.base64, true);
-                assert_eq!(item.request.1.starts_with(b"UE9TVC"), true);
-                assert_eq!(item.request.1.ends_with(b"0Ke30="), true);
+                assert!(item.request.0.base64);
+                assert!(item.request.1.starts_with(b"UE9TVC"));
+                assert!(item.request.1.ends_with(b"0Ke30="));
                 assert_eq!(item.status, 200);
                 assert_eq!(item.response_length, 614);
                 assert_eq!(item.mimetype, "JSON");
-                assert_eq!(item.response.0.base64, true);
-                assert_eq!(item.response.1.starts_with(b"SFRUUC"), true);
-                assert_eq!(item.response.1.ends_with(b"IKfQo="), true);
+                assert!(item.response.0.base64);
+                assert!(item.response.1.starts_with(b"SFRUUC"));
+                assert!(item.response.1.ends_with(b"IKfQo="));
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
                 assert!(false, "{}", err);
             }
-            None => assert!(false),
+            None => panic!(),
         }
 
         assert!(items.next().is_none());
@@ -714,22 +714,22 @@ mod tests {
                 assert_eq!(item.method, Method::GET);
                 assert_eq!(item.path, "/get?foo=bar");
                 assert_eq!(item.extension, None);
-                assert_eq!(item.request.0.base64, true);
-                assert_eq!(item.request.1.starts_with(b"R0VUIC"), true);
-                assert_eq!(item.request.1.ends_with(b"UNCg0K"), true);
+                assert!(item.request.0.base64);
+                assert!(item.request.1.starts_with(b"R0VUIC"));
+                assert!(item.request.1.ends_with(b"UNCg0K"));
                 assert_eq!(item.status, 200);
                 assert_eq!(item.response_length, 508);
                 assert_eq!(item.mimetype, "JSON");
-                assert_eq!(item.response.0.base64, true);
-                assert_eq!(item.response.1.starts_with(b"SFRUUC"), true);
-                assert_eq!(item.response.1.ends_with(b"p9Cg=="), true);
+                assert!(item.response.0.base64);
+                assert!(item.response.1.starts_with(b"SFRUUC"));
+                assert!(item.response.1.ends_with(b"p9Cg=="));
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
                 assert!(false, "{}", err);
             }
-            None => assert!(false),
+            None => panic!(),
         }
 
         match items.next() {
@@ -746,22 +746,22 @@ mod tests {
                 assert_eq!(item.method, Method::POST);
                 assert_eq!(item.path, "/post");
                 assert_eq!(item.extension, None);
-                assert_eq!(item.request.0.base64, true);
-                assert_eq!(item.request.1.starts_with(b"UE9TVC"), true);
-                assert_eq!(item.request.1.ends_with(b"0Ke30="), true);
+                assert!(item.request.0.base64);
+                assert!(item.request.1.starts_with(b"UE9TVC"));
+                assert!(item.request.1.ends_with(b"0Ke30="));
                 assert_eq!(item.status, 200);
                 assert_eq!(item.response_length, 614);
                 assert_eq!(item.mimetype, "JSON");
-                assert_eq!(item.response.0.base64, true);
-                assert_eq!(item.response.1.starts_with(b"SFRUUC"), true);
-                assert_eq!(item.response.1.ends_with(b"IKfQo="), true);
+                assert!(item.response.0.base64);
+                assert!(item.response.1.starts_with(b"SFRUUC"));
+                assert!(item.response.1.ends_with(b"IKfQo="));
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
                 assert!(false, "{}", err);
             }
-            None => assert!(false),
+            None => panic!(),
         }
 
         assert!(items.next().is_none());
@@ -779,7 +779,7 @@ mod tests {
         assert_eq!(items.attr.burp_version, "2021.3.2");
         assert_eq!(
             items.attr.export_time,
-            NaiveDate::from_ymd(2021, 3, 31).and_hms(13, 07, 44)
+            NaiveDate::from_ymd(2021, 3, 31).and_hms(13, 7, 44)
         );
 
         match items.next() {
@@ -796,22 +796,22 @@ mod tests {
                 assert_eq!(item.method, Method::GET);
                 assert_eq!(item.path, "/get?foo=bar");
                 assert_eq!(item.extension, None);
-                assert_eq!(item.request.0.base64, true);
-                assert_eq!(item.request.1.starts_with(b"R0VUIC"), true);
-                assert_eq!(item.request.1.ends_with(b"UNCg0K"), true);
+                assert!(item.request.0.base64);
+                assert!(item.request.1.starts_with(b"R0VUIC"));
+                assert!(item.request.1.ends_with(b"UNCg0K"));
                 assert_eq!(item.status, 200);
                 assert_eq!(item.response_length, 508);
                 assert_eq!(item.mimetype, "JSON");
-                assert_eq!(item.response.0.base64, true);
-                assert_eq!(item.response.1.starts_with(b"SFRUUC"), true);
-                assert_eq!(item.response.1.ends_with(b"p9Cg=="), true);
+                assert!(item.response.0.base64);
+                assert!(item.response.1.starts_with(b"SFRUUC"));
+                assert!(item.response.1.ends_with(b"p9Cg=="));
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
                 assert!(false, "{}", err);
             }
-            None => assert!(false),
+            None => panic!(),
         }
 
         match items.next() {
@@ -828,22 +828,22 @@ mod tests {
                 assert_eq!(item.method, Method::POST);
                 assert_eq!(item.path, "/post");
                 assert_eq!(item.extension, None);
-                assert_eq!(item.request.0.base64, true);
-                assert_eq!(item.request.1.starts_with(b"UE9TVC"), true);
-                assert_eq!(item.request.1.ends_with(b"oNCnt9"), true);
+                assert!(item.request.0.base64);
+                assert!(item.request.1.starts_with(b"UE9TVC"));
+                assert!(item.request.1.ends_with(b"oNCnt9"));
                 assert_eq!(item.status, 200);
                 assert_eq!(item.response_length, 593);
                 assert_eq!(item.mimetype, "JSON");
-                assert_eq!(item.response.0.base64, true);
-                assert_eq!(item.response.1.starts_with(b"SFRUUC"), true);
-                assert_eq!(item.response.1.ends_with(b"IKfQo="), true);
+                assert!(item.response.0.base64);
+                assert!(item.response.1.starts_with(b"SFRUUC"));
+                assert!(item.response.1.ends_with(b"IKfQo="));
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
                 eprintln!("{}", err);
                 assert!(false, "{}", err);
             }
-            None => assert!(false),
+            None => panic!(),
         }
 
         assert!(items.next().is_none());
