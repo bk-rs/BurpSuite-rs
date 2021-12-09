@@ -5,8 +5,8 @@ authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2021"
 description = "Burp Suite kit"
 license = "Apache-2.0 OR MIT"
-repository = "https://github.com/bk-rs/burpsuite-kit"
-homepage = "https://github.com/bk-rs/burpsuite-kit"
+repository = "https://github.com/bk-rs/BurpSuite-rs"
+homepage = "https://github.com/bk-rs/BurpSuite-rs"
 documentation = "https://docs.rs/burpsuite-kit"
 keywords = []
 categories = []
@@ -16,6 +16,6 @@ readme = "README.md"
 quick-xml = { version = "0.22", default-features = false }
 http = { version = "0.2", default-features = false }
 chrono = { version = "0.4", default-features = false }
-once_cell = { version = "1.7", default-features = false, features = ["std"] }
-strum = { version = "0.20", default-features = false, features = ["derive"] }
+once_cell = { version = "1.8", default-features = false, features = ["std"] }
+strum = { version = "0.23", default-features = false, features = ["std", "derive"] }
 thiserror = { version = "1.0", default-features = false }
