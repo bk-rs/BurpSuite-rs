@@ -67,15 +67,15 @@ where
 
         let mut buf = Vec::new();
         let attr = loop {
-            match reader.read_event(&mut buf) {
-                Ok(Event::Start(e)) => match e.name() {
+            match reader.read_event_into(&mut buf) {
+                Ok(Event::Start(e)) => match e.name().as_ref() {
                     b"items" => {
                         let attrs: Vec<Attribute<'_>> =
                             e.attributes().filter_map(|ret| ret.ok()).collect();
 
                         let burp_version = attrs
                             .iter()
-                            .find(|a| a.key == b"burpVersion")
+                            .find(|a| a.key.as_ref() == b"burpVersion")
                             .map(|x| x.value.clone())
                             .ok_or_else(|| {
                                 ItemsParseError::AttrMissing("burpVersion".to_owned())
@@ -92,7 +92,7 @@ where
 
                         let export_time = attrs
                             .iter()
-                            .find(|a| a.key == b"exportTime")
+                            .find(|a| a.key.as_ref() == b"exportTime")
                             .map(|x| x.value.clone())
                             .ok_or_else(|| ItemsParseError::AttrMissing("exportTime".to_owned()))?;
 
@@ -114,7 +114,11 @@ where
                             export_time,
                         };
                     }
-                    _ => return Err(ItemsParseError::UnknownTag(e.name().to_owned())),
+                    _ => {
+                        return Err(ItemsParseError::UnknownTag(
+                            e.name().into_inner().to_owned(),
+                        ))
+                    }
                 },
                 Err(err) => return Err(ItemsParseError::XmlError(err)),
                 Ok(Event::Eof) => return Err(ItemsParseError::UnexpectedEof),
@@ -139,7 +143,7 @@ where
 #[derive(thiserror::Error, Debug)]
 pub enum ItemParseError {
     #[error("XmlError {0:?}")]
-    XmlError(Error),
+    XmlError(#[from] Error),
     #[error("UnknownTag {0:?}")]
     UnknownTag(Vec<u8>),
     #[error("Unexpected")]
@@ -166,8 +170,8 @@ where
 {
     fn item(&mut self) -> Result<Item, ItemParseError> {
         loop {
-            match self.reader.read_event(&mut self.buf) {
-                Ok(Event::Start(e)) => match e.name() {
+            match self.reader.read_event_into(&mut self.buf) {
+                Ok(Event::Start(e)) => match e.name().as_ref() {
                     b"item" => {
                         if State::Idle != self.state {
                             return Err(ItemParseError::StateMismatch(format!(
@@ -181,7 +185,7 @@ where
                         self.state = State::WaitTag;
                     }
                     _ => {
-                        if let Ok(tag) = ItemTag::try_from(e.name()) {
+                        if let Ok(tag) = ItemTag::try_from(e.name().as_ref()) {
                             match self.state {
                                 State::Idle => {
                                     return Err(ItemParseError::StateMismatch(format!(
@@ -193,7 +197,6 @@ where
                                     if self.processed_item_tags.contains(&tag) {
                                         return Err(ItemParseError::DuplicateTag(tag));
                                     }
-
                                     match tag {
                                         ItemTag::Host => {
                                             let attrs: Vec<Attribute<'_>> =
@@ -201,7 +204,7 @@ where
 
                                             let ip = attrs
                                                 .iter()
-                                                .find(|a| a.key == b"ip")
+                                                .find(|a| a.key.as_ref() == b"ip")
                                                 .map(|x| x.value.clone())
                                                 .ok_or_else(|| {
                                                     ItemParseError::TagAttrMissing(
@@ -218,7 +221,7 @@ where
 
                                             let base64 = attrs
                                                 .iter()
-                                                .find(|a| a.key == b"base64")
+                                                .find(|a| a.key.as_ref() == b"base64")
                                                 .map(|x| x.value.clone())
                                                 .ok_or_else(|| {
                                                     ItemParseError::TagAttrMissing(
@@ -253,7 +256,7 @@ where
 
                                             let base64 = attrs
                                                 .iter()
-                                                .find(|a| a.key == b"base64")
+                                                .find(|a| a.key.as_ref() == b"base64")
                                                 .map(|x| x.value.clone())
                                                 .ok_or_else(|| {
                                                     ItemParseError::TagAttrMissing(
@@ -295,11 +298,13 @@ where
                                 }
                             }
                         } else {
-                            return Err(ItemParseError::UnknownTag(e.name().to_owned()));
+                            return Err(ItemParseError::UnknownTag(
+                                e.name().into_inner().to_owned(),
+                            ));
                         }
                     }
                 },
-                Ok(Event::End(e)) => match e.name() {
+                Ok(Event::End(e)) => match e.name().as_ref() {
                     b"items" => {}
                     b"item" => {
                         let unprocessed_item_tags = ITEM_TAG_SET
@@ -321,7 +326,7 @@ where
                         return Ok(self.item.to_owned());
                     }
                     _ => {
-                        if let Ok(tag) = ItemTag::try_from(e.name()) {
+                        if let Ok(tag) = ItemTag::try_from(e.name().as_ref()) {
                             match self.state {
                                 State::Idle => {
                                     return Err(ItemParseError::StateMismatch(format!(
@@ -336,13 +341,17 @@ where
                                     )));
                                 }
                                 State::WaitTagValue(ref wait_tag) => {
+                                    #[allow(clippy::collapsible_else_if)]
                                     if wait_tag == &tag {
                                         if self.processed_item_tags.contains(&tag) {
                                             self.state = State::WaitTag;
                                         } else {
-                                            return Err(ItemParseError::TagValueMissing(
-                                                wait_tag.to_owned(),
-                                            ));
+                                            // TODO,
+                                            if tag != ItemTag::Comment {
+                                                return Err(ItemParseError::TagValueMissing(
+                                                    wait_tag.to_owned(),
+                                                ));
+                                            }
                                         }
                                     } else {
                                         return Err(ItemParseError::StateMismatch(format!(
@@ -354,7 +363,9 @@ where
                                 }
                             }
                         } else {
-                            return Err(ItemParseError::UnknownTag(e.name().to_owned()));
+                            return Err(ItemParseError::UnknownTag(
+                                e.name().into_inner().to_owned(),
+                            ));
                         }
                     }
                 },
@@ -362,7 +373,7 @@ where
                     State::Idle => {}
                     State::WaitTag => {}
                     State::WaitTagValue(ref tag) => {
-                        let bytes = e.escaped();
+                        let bytes = e.as_ref();
                         match tag {
                             ItemTag::Time => {
                                 let time = NaiveDateTime::parse_from_str(
@@ -488,7 +499,8 @@ where
                                 self.processed_item_tags.insert(tag.to_owned());
                             }
                             ItemTag::Comment => {
-                                self.item.comment = if bytes.is_empty() {
+                                // TODO, why comment is b"\r\n  "
+                                self.item.comment = if bytes.is_empty() || bytes == b"\r\n  " {
                                     None
                                 } else {
                                     Some(String::from_utf8(bytes.to_vec()).map_err(|err| {
@@ -509,8 +521,8 @@ where
                     State::Idle => {}
                     State::WaitTag => {}
                     State::WaitTagValue(ref tag) => {
-                        let bytes = e.escape();
-                        let bytes = bytes.escaped();
+                        let bytes_text = e.escape()?;
+                        let bytes = bytes_text.as_ref();
                         match tag {
                             ItemTag::Request => {
                                 self.item.request.1 = bytes.to_vec();
