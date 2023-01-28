@@ -9,7 +9,7 @@ name = "burpsuite_kit_http_history"
 path = "src/http_history.rs"
 
 [dependencies]
-burpsuite-kit = { version = "^0.2", path = ".." }
+burpsuite-kit = { path = ".." }
 base64 = { version = "0.21" }
 http1-spec = { version = "0.2" }
 serde_json = { version = "1" }
