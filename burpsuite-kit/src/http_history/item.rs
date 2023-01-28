@@ -67,7 +67,7 @@ pub struct ItemResponseAttr {
 //
 //
 //
-#[derive(PartialEq, Eq, Hash, Debug, Clone, Display, EnumString, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumString, EnumIter)]
 #[strum(serialize_all = "snake_case")]
 pub enum Tag {
     Time,
