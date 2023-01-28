@@ -72,12 +72,12 @@ where
                 Ok(Event::Start(e)) => match e.name() {
                     b"items" => {
                         let attrs: Vec<Attribute<'_>> =
-                            e.attributes().map(|ret| ret.ok()).flatten().collect();
+                            e.attributes().filter_map(|ret| ret.ok()).collect();
 
                         let burp_version = attrs
                             .iter()
                             .find(|a| a.key == b"burpVersion")
-                            .map(|x| x.value.to_owned())
+                            .map(|x| x.value.clone())
                             .ok_or_else(|| {
                                 ItemsParseError::AttrMissing("burpVersion".to_owned())
                             })?;
@@ -94,7 +94,7 @@ where
                         let export_time = attrs
                             .iter()
                             .find(|a| a.key == b"exportTime")
-                            .map(|x| x.value.to_owned())
+                            .map(|x| x.value.clone())
                             .ok_or_else(|| ItemsParseError::AttrMissing("exportTime".to_owned()))?;
 
                         let export_time = NaiveDateTime::parse_from_str(
@@ -197,16 +197,13 @@ where
 
                                     match tag {
                                         ItemTag::Host => {
-                                            let attrs: Vec<Attribute<'_>> = e
-                                                .attributes()
-                                                .map(|ret| ret.ok())
-                                                .flatten()
-                                                .collect();
+                                            let attrs: Vec<Attribute<'_>> =
+                                                e.attributes().filter_map(|ret| ret.ok()).collect();
 
                                             let ip = attrs
                                                 .iter()
                                                 .find(|a| a.key == b"ip")
-                                                .map(|x| x.value.to_owned())
+                                                .map(|x| x.value.clone())
                                                 .ok_or_else(|| {
                                                     ItemParseError::TagAttrMissing(
                                                         tag.to_owned(),
@@ -217,16 +214,13 @@ where
                                             self.item.host.0.ip = ip.into_owned();
                                         }
                                         ItemTag::Request => {
-                                            let attrs: Vec<Attribute<'_>> = e
-                                                .attributes()
-                                                .map(|ret| ret.ok())
-                                                .flatten()
-                                                .collect();
+                                            let attrs: Vec<Attribute<'_>> =
+                                                e.attributes().filter_map(|ret| ret.ok()).collect();
 
                                             let base64 = attrs
                                                 .iter()
                                                 .find(|a| a.key == b"base64")
-                                                .map(|x| x.value.to_owned())
+                                                .map(|x| x.value.clone())
                                                 .ok_or_else(|| {
                                                     ItemParseError::TagAttrMissing(
                                                         tag.to_owned(),
@@ -255,16 +249,13 @@ where
                                             self.item.request.0.base64 = base64;
                                         }
                                         ItemTag::Response => {
-                                            let attrs: Vec<Attribute<'_>> = e
-                                                .attributes()
-                                                .map(|ret| ret.ok())
-                                                .flatten()
-                                                .collect();
+                                            let attrs: Vec<Attribute<'_>> =
+                                                e.attributes().filter_map(|ret| ret.ok()).collect();
 
                                             let base64 = attrs
                                                 .iter()
                                                 .find(|a| a.key == b"base64")
-                                                .map(|x| x.value.to_owned())
+                                                .map(|x| x.value.clone())
                                                 .ok_or_else(|| {
                                                     ItemParseError::TagAttrMissing(
                                                         tag.to_owned(),
@@ -615,14 +606,20 @@ mod tests {
         assert_eq!(items.attr.burp_version, "1.7.36");
         assert_eq!(
             items.attr.export_time,
-            NaiveDate::from_ymd(2021, 1, 6).and_hms(11, 27, 54)
+            NaiveDate::from_ymd_opt(2021, 1, 6)
+                .expect("")
+                .and_hms_opt(11, 27, 54)
+                .expect("")
         );
 
         match items.next() {
             Some(Ok(item)) => {
                 assert_eq!(
                     item.time,
-                    NaiveDate::from_ymd(2021, 1, 6).and_hms(11, 26, 17)
+                    NaiveDate::from_ymd_opt(2021, 1, 6)
+                        .expect("")
+                        .and_hms_opt(11, 26, 17)
+                        .expect("")
                 );
                 assert_eq!(item.url, "http://httpbin.org/get?foo=bar");
                 assert_eq!(item.host.0.ip, b"184.72.216.47");
@@ -644,8 +641,8 @@ mod tests {
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
-                eprintln!("{}", err);
-                assert!(false, "{}", err);
+                eprintln!("{err}");
+                panic!("{err}");
             }
             None => panic!(),
         }
@@ -654,7 +651,10 @@ mod tests {
             Some(Ok(item)) => {
                 assert_eq!(
                     item.time,
-                    NaiveDate::from_ymd(2021, 1, 6).and_hms(11, 27, 9)
+                    NaiveDate::from_ymd_opt(2021, 1, 6)
+                        .expect("")
+                        .and_hms_opt(11, 27, 9)
+                        .expect("")
                 );
                 assert_eq!(item.url, "https://httpbin.org/post");
                 assert_eq!(item.host.0.ip, b"54.164.234.192");
@@ -676,8 +676,8 @@ mod tests {
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
-                eprintln!("{}", err);
-                assert!(false, "{}", err);
+                eprintln!("{err}");
+                panic!("{err}");
             }
             None => panic!(),
         }
@@ -697,14 +697,20 @@ mod tests {
         assert_eq!(items.attr.burp_version, "2020.12.1");
         assert_eq!(
             items.attr.export_time,
-            NaiveDate::from_ymd(2021, 1, 6).and_hms(11, 36, 18)
+            NaiveDate::from_ymd_opt(2021, 1, 6)
+                .expect("")
+                .and_hms_opt(11, 36, 18)
+                .expect("")
         );
 
         match items.next() {
             Some(Ok(item)) => {
                 assert_eq!(
                     item.time,
-                    NaiveDate::from_ymd(2021, 1, 6).and_hms(11, 36, 3)
+                    NaiveDate::from_ymd_opt(2021, 1, 6)
+                        .expect("")
+                        .and_hms_opt(11, 36, 3)
+                        .expect("")
                 );
                 assert_eq!(item.url, "http://httpbin.org/get?foo=bar");
                 assert_eq!(item.host.0.ip, b"184.72.216.47");
@@ -726,8 +732,8 @@ mod tests {
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
-                eprintln!("{}", err);
-                assert!(false, "{}", err);
+                eprintln!("{err}");
+                panic!("{err}");
             }
             None => panic!(),
         }
@@ -736,7 +742,10 @@ mod tests {
             Some(Ok(item)) => {
                 assert_eq!(
                     item.time,
-                    NaiveDate::from_ymd(2021, 1, 6).and_hms(11, 36, 6)
+                    NaiveDate::from_ymd_opt(2021, 1, 6)
+                        .expect("")
+                        .and_hms_opt(11, 36, 6)
+                        .expect("")
                 );
                 assert_eq!(item.url, "https://httpbin.org/post");
                 assert_eq!(item.host.0.ip, b"184.72.216.47");
@@ -758,8 +767,8 @@ mod tests {
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
-                eprintln!("{}", err);
-                assert!(false, "{}", err);
+                eprintln!("{err}");
+                panic!("{err}");
             }
             None => panic!(),
         }
@@ -779,14 +788,20 @@ mod tests {
         assert_eq!(items.attr.burp_version, "2021.3.2");
         assert_eq!(
             items.attr.export_time,
-            NaiveDate::from_ymd(2021, 3, 31).and_hms(13, 7, 44)
+            NaiveDate::from_ymd_opt(2021, 3, 31)
+                .expect("")
+                .and_hms_opt(13, 7, 44)
+                .expect("")
         );
 
         match items.next() {
             Some(Ok(item)) => {
                 assert_eq!(
                     item.time,
-                    NaiveDate::from_ymd(2021, 3, 31).and_hms(13, 6, 6)
+                    NaiveDate::from_ymd_opt(2021, 3, 31)
+                        .expect("")
+                        .and_hms_opt(13, 6, 6)
+                        .expect("")
                 );
                 assert_eq!(item.url, "http://httpbin.org/get?foo=bar");
                 assert_eq!(item.host.0.ip, b"34.199.75.4");
@@ -808,8 +823,8 @@ mod tests {
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
-                eprintln!("{}", err);
-                assert!(false, "{}", err);
+                eprintln!("{err}");
+                panic!("{err}");
             }
             None => panic!(),
         }
@@ -818,7 +833,10 @@ mod tests {
             Some(Ok(item)) => {
                 assert_eq!(
                     item.time,
-                    NaiveDate::from_ymd(2021, 3, 31).and_hms(13, 6, 13)
+                    NaiveDate::from_ymd_opt(2021, 3, 31)
+                        .expect("")
+                        .and_hms_opt(13, 6, 13)
+                        .expect("")
                 );
                 assert_eq!(item.url, "https://httpbin.org/post");
                 assert_eq!(item.host.0.ip, b"34.199.75.4");
@@ -840,8 +858,8 @@ mod tests {
                 assert_eq!(item.comment, None);
             }
             Some(Err(err)) => {
-                eprintln!("{}", err);
-                assert!(false, "{}", err);
+                eprintln!("{err}");
+                panic!("{err}");
             }
             None => panic!(),
         }

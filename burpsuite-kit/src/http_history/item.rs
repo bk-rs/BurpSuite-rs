@@ -31,7 +31,7 @@ pub struct Item {
 impl Default for Item {
     fn default() -> Self {
         Self {
-            time: NaiveDateTime::from_timestamp(0, 0),
+            time: NaiveDateTime::from_timestamp_opt(0, 0).expect(""),
             url: Default::default(),
             host: Default::default(),
             port: Default::default(),
