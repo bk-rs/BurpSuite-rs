@@ -5,12 +5,12 @@ RUST_LOG=debug cargo run -p burpsuite-kit-demo --bin burpsuite_kit_http_history
 use std::{
     env, error,
     fs::File,
-    io::{self, BufReader, Cursor},
+    io::{BufReader, Cursor, Error as IoError, ErrorKind as IoErrorKind},
     path::PathBuf,
     str,
 };
 
-use base64::decode as base64_decode;
+use base64::{engine::general_purpose, Engine as _};
 use burpsuite_kit::http_history::items::{ItemParseError, Items};
 use http1_spec::{
     head_parser::{HeadParseConfig, HeadParseOutput, HeadParser},
@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let items: Vec<_> = items
         .filter_map(|item| {
             if item.is_err() {
-                error!("{:?}", item)
+                error!("{item:?}")
             }
 
             item.and_then(|item| {
@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
                     Ok(item)
                 } else {
                     Err(ItemParseError::XmlError(
-                        io::Error::new(io::ErrorKind::Other, "").into(),
+                        IoError::new(IoErrorKind::Other, "").into(),
                     ))
                 }
             })
@@ -60,12 +60,14 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
     for item in items.iter() {
         let req_bytes = if item.request.0.base64 {
-            base64_decode(&item.request.1)?
+            general_purpose::STANDARD.decode(&item.request.1)?
         } else {
             item.request.1.to_owned()
         };
+
         let mut req_buf_reader = BufReader::new(Cursor::new(req_bytes));
         let mut req_head_parse_config = HeadParseConfig::default();
+
         req_head_parse_config
             .set_uri_max_len(1024)
             .set_header_max_len(2048);
@@ -73,6 +75,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
         let req_head_parser_output = req_head_parser
             .parse(&mut req_buf_reader)
             .map_err(|err| err.to_string())?;
+
         let n = match req_head_parser_output {
             HeadParseOutput::Completed(n) => n,
             HeadParseOutput::Partial(_) => {
@@ -88,7 +91,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 
         //
         let res_bytes = if item.response.0.base64 {
-            base64_decode(&item.response.1)?
+            general_purpose::STANDARD.decode(&item.response.1)?
         } else {
             item.response.1.to_owned()
         };

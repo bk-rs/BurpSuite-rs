@@ -9,10 +9,10 @@ name = "burpsuite_kit_http_history"
 path = "src/http_history.rs"
 
 [dependencies]
-burpsuite-kit = { path = "..", version = "^0.2" }
-base64 = "0.13"
-http1-spec = "0.2"
-serde_json = "1.0"
+burpsuite-kit = { version = "^0.2", path = ".." }
+base64 = { version = "0.21" }
+http1-spec = { version = "0.2" }
+serde_json = { version = "1" }
 
-pretty_env_logger = "0.4"
-log = "0.4"
+pretty_env_logger = { version = "0.4" }
+log = { version = "0.4" }

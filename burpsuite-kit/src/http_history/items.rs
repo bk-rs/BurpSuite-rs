@@ -1,11 +1,9 @@
-use std::{
-    collections::HashSet,
-    convert::TryFrom,
-    io::BufRead,
+use core::{
     iter::Iterator,
     num::ParseIntError,
     str::{self, ParseBoolError},
 };
+use std::{collections::HashSet, io::BufRead};
 
 use chrono::NaiveDateTime;
 use http::{
@@ -19,6 +17,7 @@ use quick_xml::{
 
 use super::item::{Item, Tag as ItemTag, TAG_SET as ITEM_TAG_SET};
 
+//
 pub struct Items<R>
 where
     R: BufRead,
@@ -510,7 +509,8 @@ where
                     State::Idle => {}
                     State::WaitTag => {}
                     State::WaitTagValue(ref tag) => {
-                        let bytes = e.escaped();
+                        let bytes = e.escape();
+                        let bytes = bytes.escaped();
                         match tag {
                             ItemTag::Request => {
                                 self.item.request.1 = bytes.to_vec();
