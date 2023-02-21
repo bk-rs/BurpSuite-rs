@@ -5,13 +5,13 @@ authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2021"
 
 [[bin]]
-name = "burpsuite_kit_http_history"
+name = "burpsuite_kit_demo_http_history"
 path = "src/http_history.rs"
 
 [dependencies]
 burpsuite-kit = { path = ".." }
 base64 = { version = "0.21" }
-http1-spec = { version = "0.2" }
+http1-spec = { version = "0.3" }
 serde_json = { version = "1" }
 
 pretty_env_logger = { version = "0.4" }

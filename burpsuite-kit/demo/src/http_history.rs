@@ -1,5 +1,5 @@
 /*
-RUST_LOG=debug cargo run -p burpsuite-kit-demo --bin burpsuite_kit_http_history
+RUST_LOG=debug cargo run -p burpsuite-kit-demo --bin burpsuite_kit_demo_http_history
 */
 
 use std::{
